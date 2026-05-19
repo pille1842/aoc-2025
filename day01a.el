@@ -13,7 +13,7 @@
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;;
+;;(solve-puzzle-another-way (aoc-input-buffer 1 "a" t))
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;
@@ -116,23 +116,7 @@
 ;;
 ;;; Code:
 
-(defun aoc-input-buffer (day puzzle &optional example)
-  "Return a buffer for the input data of the given Advent of Code
-day.
-
-Puzzle is expected to be a string containing either `a' or `b' for the
-first or second puzzle of the day.
-
-If the optional argument example is non-nil, the example input will be
-read instead.  Input files are expected to be in the current directory
-and follow a naming scheme of dayNNa.txt resp. dayNNa-example.txt."
-  (find-file-noselect
-   (concat
-    "day"
-    (format "%02d" day)
-    puzzle
-    (when example "-example")
-    ".txt")))
+(load (expand-file-name "./common.el"))
 
 (defun solve-puzzle (input-buffer)
   "Solve puzzle 1 on day 1 of Advent of Code 2025 for the given input."
