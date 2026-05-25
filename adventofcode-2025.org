@@ -1,0 +1,241 @@
+#+title: Advent of Code 2025
+#+author: Eric Haberstroh
+#+email: eric@erichaberstroh.de
+#+date: 2026-05-22
+
+* Advent of Code 2025
+This is my attempt at solving all the riddles in [[https://adventofcode.com/2025/][Advent of Code 2025]] using Emacs Lisp.
+
+** Day 1: Secret Entrance
+
+*** The first puzzle
+The Elves have good news and bad news.
+
+The good news is that they've discovered project management! This has given them the tools they need to prevent their usual Christmas emergency. For example, they now know that the North Pole decorations need to be finished soon so that other critical tasks can start on time.
+
+The bad news is that they've realized they have a different emergency: according to their resource planning, none of them have any time left to decorate the North Pole!
+
+To save Christmas, the Elves need you to finish decorating the North Pole by December 12th.
+
+Collect stars by solving puzzles. Two puzzles will be made available on each day; the second puzzle is unlocked when you complete the first. Each puzzle grants one star. Good luck!
+
+You arrive at the secret entrance to the North Pole base ready to start decorating. Unfortunately, the password seems to have been changed, so you can't get in. A document taped to the wall helpfully explains:
+
+"Due to new security protocols, the password is locked in the safe below. Please see the attached document for the new combination."
+
+The safe has a dial with only an arrow on it; around the dial are the numbers 0 through 99 in order. As you turn the dial, it makes a small click noise as it reaches each number.
+
+The attached document (your puzzle input) contains a sequence of rotations, one per line, which tell you how to open the safe. A rotation starts with an L or R which indicates whether the rotation should be to the left (toward lower numbers) or to the right (toward higher numbers). Then, the rotation has a distance value which indicates how many clicks the dial should be rotated in that direction.
+
+So, if the dial were pointing at 11, a rotation of R8 would cause the dial to point at 19. After that, a rotation of L19 would cause it to point at 0.
+
+Because the dial is a circle, turning the dial left from 0 one click makes it point at 99. Similarly, turning the dial right from 99 one click makes it point at 0.
+
+So, if the dial were pointing at 5, a rotation of L10 would cause it to point at 95. After that, a rotation of R5 could cause it to point at 0.
+
+The dial starts by pointing at 50.
+
+You could follow the instructions, but your recent required official North Pole secret entrance security training seminar taught you that the safe is actually a decoy. The actual password is the number of times the dial is left pointing at 0 after any rotation in the sequence.
+
+For example, suppose the attached document contained the following rotations:
+
+L68
+L30
+R48
+L5
+R60
+L55
+L1
+L99
+R14
+L82
+
+Following these rotations would cause the dial to move as follows:
+
+    The dial starts by pointing at 50.
+    The dial is rotated L68 to point at 82.
+    The dial is rotated L30 to point at 52.
+    The dial is rotated R48 to point at 0.
+    The dial is rotated L5 to point at 95.
+    The dial is rotated R60 to point at 55.
+    The dial is rotated L55 to point at 0.
+    The dial is rotated L1 to point at 99.
+    The dial is rotated L99 to point at 0.
+    The dial is rotated R14 to point at 14.
+    The dial is rotated L82 to point at 32.
+
+Because the dial points at 0 a total of three times during this process, the password in this example is 3.
+
+Analyze the rotations in your attached document. What's the actual password to open the door?
+
+*** The first solution
+So my thought is: Despite this being about a dial going from 0 to 99, this could just as well be about a dial going from 1 to 12, so a clock. We can solve this with modulo arithmetic:
+
+\begin{equation}
+x_1 = (x_0 + \delta) \mod 100
+\end{equation}
+
+The implementation of this first part, then, is very simple. Let's start with the example input:
+
+#+NAME: example-input-1
+#+begin_example
+  L68
+  L30
+  R48
+  L5
+  R60
+  L55
+  L1
+  L99
+  R14
+  L82
+#+end_example
+
+First, we need to replace L with a - sign and R with nothing (or a + sign, but nothing will do).
+
+#+NAME: day-1-step-1
+#+begin_src emacs-lisp :var input=example-input-1 :results value
+  (string-replace "L" "-" (string-replace "R" "" input))
+#+end_src
+
+#+RESULTS: day-1-step-1
+#+begin_src emacs-lisp
+"-68\n-30\n48\n-5\n60\n-55\n-1\n-99\n14\n-82\n"
+#+end_src
+
+When we split this string at the newlines and treat each element as an integer, we can get a list of integers which need to be applied to the dial in order. For this, we first split the string using [[help:string-lines][string-lines]] and then apply the function [[help:string-to-number][string-to-number]] to every element of the resulting list.
+
+#+NAME: day-1-step-2
+#+begin_src emacs-lisp :var input=day-1-step-1 :results value
+  (mapcar #'string-to-number (string-lines input t))
+#+end_src
+
+#+RESULTS: day-1-step-2
+#+begin_src emacs-lisp
+(-68 -30 48 -5 60 -55 -1 -99 14 -82)
+#+end_src
+
+Finally, we can iterate over these values, adding them to the current value of the dial in turn and using the [[help:mod][mod]] function to get the resulting position of the dial. When the dial value is 0, we add 1 to a counter. The final value of that counter is our puzzle solution.
+
+#+NAME: day-1-step-3
+#+begin_src emacs-lisp :var input=day-1-step-2
+  (let ((dial 50)
+        (zero-counter 0))
+    (dolist (element input)
+      (setq dial (mod (+ dial element) 100))
+      (when (= dial 0)
+        (setq zero-counter (1+ zero-counter))))
+    zero-counter)
+#+end_src
+
+#+RESULTS: day-1-step-3
+: 3
+
+Let's do all the steps with our actual input.
+
+#+begin_src emacs-lisp :results value
+  (let* ((input
+         (with-temp-buffer
+           (insert-file-contents "day01a.txt")
+           (buffer-string)))
+         (step1
+          (string-replace "L" "-" (string-replace "R" "" input)))
+         (step2
+          (mapcar #'string-to-number (string-lines step1))))
+    (let ((dial 50)
+          (zero-counter 0))
+      (dolist (element step2)
+        (setq dial (mod (+ dial element) 100))
+        (when (= dial 0)
+          (setq zero-counter (1+ zero-counter))))
+      zero-counter))
+#+end_src
+
+#+RESULTS:
+: 964
+
+Our answer, therefore, is 964 (your results may vary).
+
+*** The second puzzle
+You're sure that's the right password, but the door won't open. You knock, but nobody answers. You build a snowman while you think.
+
+As you're rolling the snowballs for your snowman, you find another security document that must have fallen into the snow:
+
+"Due to newer security protocols, please use password method 0x434C49434B until further notice."
+
+You remember from the training seminar that "method 0x434C49434B" means you're actually supposed to count the number of times any click causes the dial to point at 0, regardless of whether it happens during a rotation or at the end of one.
+
+Following the same rotations as in the above example, the dial points at zero a few extra times during its rotations:
+
+    The dial starts by pointing at 50.
+    The dial is rotated L68 to point at 82; during this rotation, it points at 0 once.
+    The dial is rotated L30 to point at 52.
+    The dial is rotated R48 to point at 0.
+    The dial is rotated L5 to point at 95.
+    The dial is rotated R60 to point at 55; during this rotation, it points at 0 once.
+    The dial is rotated L55 to point at 0.
+    The dial is rotated L1 to point at 99.
+    The dial is rotated L99 to point at 0.
+    The dial is rotated R14 to point at 14.
+    The dial is rotated L82 to point at 32; during this rotation, it points at 0 once.
+
+In this example, the dial points at 0 three times at the end of a rotation, plus three more times during a rotation. So, in this example, the new password would be 6.
+
+Be careful: if the dial were pointing at 50, a single rotation like R1000 would cause the dial to point at 0 ten times before returning back to 50!
+
+Using password method 0x434C49434B, what is the password to open the door?
+
+*** The second solution
+This part was a nightmare. After talking to a friend, I first tried this by implementing a modulo function myself, but that always gave the wrong answer. My suspicion is that it incorrectly handled edge cases with very large motions to the left or right. I'm not quite sure. To solve this, I actually turned to Claude. After a very long session, including sending log files and debug messages to it, it came up with the following solution.
+
+I am too exhausted now to try to understand how this works. But it did, so I'm happy. This was a very rough first day. I can't remember the first puzzle in earlier years ever being so hard. What made the situation worse was that multiple attempts gave the correct result on the example input, but very wrong results on my actual input. My suggestion, which nobody asked for, would be to try and fix that, especially in the very early puzzles. But let's see where this takes me from here.
+
+This is the solution for the example input, reusing code above to get the list of numbers.
+
+#+begin_src emacs-lisp :var input=day-1-step-2
+  (let ((dial 50)
+        (zero-counter 0))
+    (dolist (element input)
+      (let* ((start dial)
+             (n (abs element))
+             (crossings
+              (if (> element 0)
+                  (/ (+ (mod start 100) n) 100)
+                (/ (+ n (mod (- 100 start) 100)) 100))))
+        (setq zero-counter (+ zero-counter crossings))
+        (setq dial (mod (+ start element) 100))))
+    zero-counter)
+#+end_src
+
+#+RESULTS:
+: 6
+
+This is the solution for the actual input.
+
+#+begin_src emacs-lisp :results value
+  (let* ((input
+          (with-temp-buffer
+            (insert-file-contents "day01a.txt")
+            (buffer-string)))
+         (step1
+          (string-replace "L" "-" (string-replace "R" "" input)))
+         (step2
+          (mapcar #'string-to-number (string-lines step1 t))))
+    (let ((dial 50)
+          (zero-counter 0))
+      (dolist (element step2)
+        (let* ((start dial)
+               (n (abs element))
+               (crossings
+                (if (> element 0)
+                    (/ (+ (mod start 100) n) 100)
+                  (/ (+ n (mod (- 100 start) 100)) 100))))
+          (setq zero-counter (+ zero-counter crossings))
+          (setq dial (mod (+ start element) 100))))
+      zero-counter))
+#+end_src
+
+#+RESULTS:
+: 5872
+
+Our solution is 5872.
